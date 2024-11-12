@@ -1,0 +1,184 @@
+--1. Write a query to display the names of employees with column aliases as “First Name" for `first_name` and "Last Name" for `last_name`
+select employees.first_name AS "First name", employees.last_name AS "Last name" from employees;
+
+--2. Create a query that displays each employee's first and last name, salary, and calculates 15% of their salary, naming this amount "PF".
+select first_name, last_name, salary, salary*0.15 AS PF from employees;
+
+--3. Write a query to find the average salary and the total number of employees.
+select AVG(salary) as average , Count(employee_id) as number from employees;
+
+--4. Create a query to find both the highest and lowest salaries paid to employees.
+select max(salary) as highest_salary, min(salary) as lowest_salary from employees;
+
+--5. Write a query to get the second-highest and second-lowest salaries in the company.
+select salary from employees order by salary asc;
+
+select
+  (select MAX(salary)
+   from employees
+   where salary < (select MAX(salary) FROM employees)) as "Second Highest Salary",
+
+  (select MIN(salary)
+   from employees
+   where salary > (select MIN(salary) from employees)) as "Second Lowest Salary";
+
+--6. List all employees' first names, converting each name to uppercase.
+select upper(employees.first_name) from employees;
+
+--7. Write a query to get each employee's first name with all leading and trailing spaces removed.
+select trim(first_name) from employees;
+
+--8. Display each employee's first name, last name, and the combined length of both names.
+select first_name, last_name, length(employees.first_name)+length(employees.last_name) as "Combined length" from employees;
+
+--9. Write a query to identify if any employee's first name contains numeric characters.
+select employees.first_name from employees where first_name ~ '[0-9]';
+
+--10. Find the number of distinct job positions in the employee data.
+select Count(distinct job_id) from employees;
+
+--11. Write a query to get the maximum, minimum, total, and average salaries of all employees
+select max(salary) as "Maximum salary", min(salary) as "Minimal salary", avg(salary) as "Average salary", sum(salary) as "Total salary" from employees;
+
+--12. Display the number of employees holding each job position.
+select employees.job_id, jobs.job_title, COUNT(employees.employee_id)
+from employees
+LEFT JOIN public.jobs jobs on employees.job_id = jobs.job_id
+group by employees.job_id, jobs.job_title;
+
+--13. Write a query to get the manager ID along with the lowest salary of employees reporting to that manager.
+select min(minimum) as overall from (select min(salary) as minimum from employees group by manager_id) as lowes_salaries;
+
+--14. List the address details (location_id, street_address, city, state_province, country_name) for all departments.
+select  department_id, department_name, street_address, city, state_province, state_province from departments as d left join public.locations l on d.location_id = l.location_id;
+
+--15. Join the `employees` and `departments` tables to display each employee's first and last name, department ID, and department name.
+select  first_name, last_name, department_name from employees as e left join public.departments as d on e.department_id = d.department_id;
+
+--16. Write a query to join the `employees`, `departments`, and `locations` tables to find the first name, last name, job title, department name, and department ID for employees based in London.
+SELECT e.first_name, e.last_name, j.job_title, d.department_name, d.department_id
+FROM employees e
+left join jobs j on e.job_id = j.job_id
+left join departments d ON e.department_id = d.department_id
+left join locations l ON d.location_id = l.location_id
+WHERE l.city = 'London';
+
+--17. Use a self-join on the `employees` table to display each employee's ID, last name as "Employee", along with their manager’s ID and last name as "Manager"
+select e.employee_id, e.last_name AS "Employee", m.employee_id AS "Manager ID" , m.last_name AS "Manager"
+FROM employees e
+LEFT JOIN employees m ON e.manager_id = m.employee_id where m.employee_id is not null;
+
+--18. Join tables to find the employee ID, job title, and days worked by employees who were in the department with ID 90.
+select employee_id, job_title, ( current_date - hire_date) as difference from employees e left join jobs  j on e.job_id = j.job_id where e.department_id = 90;
+
+select
+    e.employee_id,
+    j.job_title,
+    extract(YEAR FROM age(current_date, e.hire_date)) AS years_difference
+from employees e
+left join jobs j ON e.job_id = j.job_id;
+
+--19. Use a join to display the department name, manager's name, and the city of each department.
+select e.first_name, department_name, city from employees e
+    left join employees m on e.manager_id = m.employee_id
+    left join departments d on e.department_id=d.department_id
+    left join locations l on d.location_id = l.location_id;
+
+--20. Join the `job_history` and `employees` tables to show the status of employees currently earning more than a salary of 10,000.
+select first_name, last_name,
+case
+    when end_date is not null then 'fired'
+    else 'in company' end as status
+from employees e left join job_history jh on e.employee_id = jh.employee_id where salary>10000;
+
+
+-- 21. Write a query to find the first and last names and salaries of employees who earn more than the salary of the employee with the last name "Bull".
+select employees.first_name, employees.last_name, employees.salary from employees where salary>(select salary from employees where last_name like 'Bull');
+
+-- 22. Use a subquery to find the first and last names of employees working in the IT department.
+select first_name, last_name from employees where department_id = (select department_id from departments where department_name like 'IT');
+--
+-- 23. Use a subquery to list the first and last names of employees who report to a manager working in a department based in the United States.
+select first_name, last_name from employees where manager_id in (select manager_id from departments where department_id in (select department_id from locations where state_province is not null));
+
+--
+-- 24. Write a subquery to find the first and last names of employees who hold a managerial position.
+select e.first_name, e.last_name from employees e where e.employee_id IN (
+    select DISTINCT manager_id
+    from employees
+    where manager_id IS NOT NULL
+);
+--
+-- 25. Use a subquery to retrieve the first name, last name, and salary of each employee whose salary matches the minimum salary for their job position.
+select job_id, MIN(salary) AS min_salary from employees group by job_id;
+
+select e.first_name, e.last_name, e.salary from employees e where e.salary = (
+    select MIN(salary) from e  mployees where job_id = e.job_id
+);
+
+-- 26. Write a subquery to find the first name, last name, and salary of employees who earn above the average salary and work in any IT-related department.
+select first_name, last_name, salary from employees where salary> (select AVG(salary) from employees where job_id like 'IT%')
+--
+-- 27. Use a subquery to find the first name, last name, job ID, and salary of employees who earn more than all "Shipping Clerks" (JOB_ID = 'SH_CLERK'), sorted by salary in ascending order.
+select first_name, last_name, job_id, salary from employees where salary> (select Max(salary) from employees where job_id = 'SH_CLERK') order by salary asc
+--
+-- 28. List the first and last names of employees who do not manage other employees.
+select e.first_name, e.last_name from employees e where e.employee_id NOT IN (
+    select DISTINCT manager_id
+    from employees
+    where manager_id IS NOT NULL
+);--
+-- 29. Use a subquery to display employee ID, first name, last name, and department name for all employees.
+select first_name, last_name, employee_id, department_name from employees join departments on employees.department_id = departments.department_id
+--
+-- 30. Write a subquery to get the fourth-lowest salary among all employees' salaries.
+select salary from employees order by salary asc limit 1 offset 3;
+--
+-- 31. Find the department numbers and names of departments with no current employees.
+select department_name, count(employee_id) as num from departments left join employees on departments.department_id=employees.department_id
+group by department_name having count(employee_id)  = 0
+--
+-- 32. Write a query to retrieve the top three highest unique salaries.
+select distinct (salary) from employees order by salary desc limit 3
+--
+    -- 33. Change the `email` field of employees whose department_id is 80 and commission rate is below 20% to 'not available'.
+update employees set email = 'not available' where department_id = 80 and commission_pct < 0.20;
+
+--
+-- 34. Update the salary to 8,000 for the employee with ID 105, but only if their current salary is below 5,000.
+update employees set salary=8000 where employee_id = 105 and salary<5000
+--
+-- 35. Change the job ID of the employee with ID 118 to 'SH_CLERK' if they work in department 30 and their current job ID does not start with 'SH'.
+update employees set job_id = 'SH_CLERK' where employee_id=118 and department_id=30 and job_id not like 'SH%'
+--
+-- 36. Increase the salaries of employees in departments 40, 90, and 110 as follows: 25% for department 40, 15% for department 90, and 10% for department 110. Salaries in other departments remain the same.
+update employees set salary =
+    case
+        when department_id = 40 then  salary*1.25
+        when department_id = 90 then   salary*1.15
+        when department_id = 110 then  salary*1.10
+        else salary
+end;
+
+
+
+--
+-- 37. Write a query to find the last name, job title, and salary of employees who have not worked as "Programmer" or "Shipping Clerk" and do not have a salary of 4,500, 10,000, or 15,000.
+select last_name, employees.job_id, salary from employees left join public.jobs j on employees.job_id = j.job_id
+                                 where job_title NOT IN ('Programmer', 'Shipping Clerk')
+  AND salary NOT IN (4500, 10000, 15000);
+
+--
+-- 38. Write a query to list the employee ID, job title, and the length of service in days for all employees who have worked in a department with ID 100.
+select  employee_id, job_title, (current_date - hire_date) as days from employees left join jobs on employees.job_id = jobs.job_id where department_id = 100;
+--
+-- 39. Write a query to display the first name, last name, department name, and location ID for employees working in departments located in the city "New York."
+select first_name, last_name, department_name, departments.location_id from employees left join departments on employees.department_id = departments.department_id left join locations on departments.location_id = locations.location_id where city = 'New York'
+--
+-- 40. Create a query to show each department’s ID, name, and the number of employees in that department, only for departments with more than five employees.
+select departments.department_id, departments.department_name, count(employees.employee_id) as num from employees
+                                                          left join departments on employees.department_id = departments.department_id
+                                                         group by departments.department_id, departments.department_name having COUNT(employees.employee_id) > 5;
+
+
+

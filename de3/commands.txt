@@ -1,0 +1,2 @@
+docker compose -f de3/docker-compose.yml up -d
+docker compose -f de3/docker-compose.yml exec postgres sh -c 'psql -h localhost -U "$POSTGRES_USER" "$POSTGRES_DB" < /de3/pgex_backup.pgsql'

@@ -2,11 +2,17 @@ version: "3.9"
 services:
   postgres:
     image: postgres:15
+    networks:
+      - airflow_de
     environment:
       POSTGRES_DB: "dbname"
       POSTGRES_USER: "karina"
       POSTGRES_PASSWORD: "12345"
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - /home/karina/Documents/de/de3:/de3
+      - ./pg_hba.conf:/var/lib/postgresql/data/pg_hba.conf
+networks:
+  airflow_de:
+    external: true
